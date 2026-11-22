@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SVR Men's Wear — Custom Tailoring &amp; Shopping App</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .fade-in { animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-stone-50 text-stone-900 min-h-screen flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-white border-b border-stone-200 sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 rounded-lg bg-amber-700 text-white flex items-center justify-center shrink-0">
+          <i data-lucide="scissors" class="w-5 h-5"></i>
+        </div>
+        <div class="min-w-0">
+          <h1 id="header-shop-name" class="text-base sm:text-lg font-bold text-stone-900 truncate">SVR Men's Wear</h1>
+          <p id="header-shop-tagline" class="text-xs text-stone-500 truncate">Custom Men's Tailoring &amp; Bespoke Fit</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- Owner Mode Switcher (Hidden until signed in with owner email & password) -->
+        <nav id="owner-nav" class="hidden flex items-center bg-stone-100 p-1 rounded-lg border border-stone-200" aria-label="View mode">
+          <button id="tab-shop" type="button"
+            class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 bg-white text-stone-900 shadow-sm">
+            <i data-lucide="store" class="w-4 h-4"></i>
+            <span>Customer Shop</span>
+          </button>
+          <button id="tab-owner" type="button"
+            class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 text-stone-600 hover:text-stone-900">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span>Owner Panel</span>
+            <span id="owner-orders-badge" class="hidden ml-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-700 text-white">0</span>
+          </button>
+        </nav>
+
+        <!-- Track Order Button -->
+        <button id="open-track-btn" type="button"
+          class="px-3 py-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-200 text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors">
+          <i data-lucide="package-search" class="w-4 h-4 text-amber-700"></i>
+          <span class="hidden sm:inline">Track Order</span>
+        </button>
+
+        <!-- Cart Button -->
+        <button id="open-cart-btn" type="button"
+          class="relative px-3 py-2 rounded-lg bg-amber-700 hover:bg-amber-800 text-white text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Cart</span>
+          <span id="cart-count-badge" class="px-1.5 py-0.5 text-[11px] font-bold rounded-full bg-white text-amber-800">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
+
+    <!-- VIEW 1: CUSTOMER SHOP -->
+    <section id="view-shop" class="space-y-5 fade-in">
+      <!-- Shop Info Banner -->
+      <div class="bg-gradient-to-br from-amber-800 to-stone-900 text-white rounded-2xl p-5 sm:p-7 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div class="space-y-1.5">
+            <span class="inline-block text-xs font-semibold uppercase tracking-wider bg-amber-600/40 text-amber-100 px-2.5 py-0.5 rounded-full">
+              Bespoke Men's Tailoring
+            </span>
+            <h2 id="banner-shop-name" class="text-2xl sm:text-3xl font-bold">SVR Men's Wear</h2>
+            <p id="banner-shop-tagline" class="text-stone-200 text-sm sm:text-base">Custom Men's Tailoring &amp; Bespoke Fit</p>
+          </div>
+          <div class="bg-white/10 backdrop-blur-sm rounded-xl p-3.5 text-xs sm:text-sm space-y-1.5 border border-white/15 shrink-0">
+            <div class="flex items-center gap-2">
+              <i data-lucide="phone" class="w-4 h-4 text-amber-300 shrink-0"></i>
+              <span id="banner-phone">+91 9398791839 / 9949129446</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <i data-lucide="map-pin" class="w-4 h-4 text-amber-300 shrink-0"></i>
+              <span id="banner-address">Guntakal, Ananthapur District, Andhra Pradesh</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <i data-lucide="clock" class="w-4 h-4 text-amber-300 shrink-0"></i>
+              <span id="banner-hours">Mon–Sat, 10 AM – 8 PM</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Offers Strip -->
+      <div id="shop-offers-strip" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+            <i data-lucide="tag" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-amber-900 uppercase tracking-wide">Active Offer</p>
+            <p id="shop-offer-text" class="text-sm text-amber-800 font-medium"></p>
+          </div>
+        </div>
+        <button id="copy-offer-btn" type="button"
+          class="text-xs font-semibold bg-amber-700 hover:bg-amber-800 text-white px-3 py-1.5 rounded-lg transition-colors">
+          Copy Code
+        </button>
+      </div>
+
+      <!-- Search & Category Filter -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div id="category-filters" class="flex flex-wrap gap-2">
+          <button type="button" data-category="All" class="cat-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-amber-700 text-white">All</button>
+          <button type="button" data-category="Shirts" class="cat-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-white text-stone-700 border border-stone-200 hover:bg-stone-100">Shirts</button>
+          <button type="button" data-category="Kurtas" class="cat-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-white text-stone-700 border border-stone-200 hover:bg-stone-100">Kurtas</button>
+          <button type="button" data-category="Suits" class="cat-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-white text-stone-700 border border-stone-200 hover:bg-stone-100">Suits</button>
+          <button type="button" data-category="Trousers" class="cat-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-white text-stone-700 border border-stone-200 hover:bg-stone-100">Trousers</button>
+          <button type="button" data-category="Alterations" class="cat-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-white text-stone-700 border border-stone-200 hover:bg-stone-100">Alterations</button>
+        </div>
+
+        <div class="relative w-full sm:w-64">
+          <i data-lucide="search" class="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input id="search-input" type="text" placeholder="Search shirts, kurtas, suits..."
+            class="w-full pl-9 pr-3 py-2 text-sm bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+        </div>
+      </div>
+
+      <!-- Catalog Grid -->
+      <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered by JavaScript -->
+      </div>
+    </section>
+
+    <!-- VIEW 2: OWNER PANEL (Only accessible after owner email + password sign in) -->
+    <section id="view-owner" class="hidden space-y-6 fade-in">
+
+      <!-- Owner Status Bar -->
+      <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3 flex-wrap text-xs sm:text-sm text-amber-900">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="shield-check" class="w-4 h-4 text-amber-700"></i>
+            <span>Signed in as Owner: <strong id="signed-in-owner-email"></strong></span>
+          </div>
+          <span id="cloud-sync-pill" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-stone-200 text-stone-700">
+            Connecting Cloud...
+          </span>
+        </div>
+        <button id="owner-signout-btn" type="button"
+          class="px-3 py-1.5 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-semibold transition-colors">
+          Sign Out (Hide Owner Panel)
+        </button>
+      </div>
+
+      <!-- Card 0: Received Orders & India Post Dispatch -->
+      <div class="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div class="flex items-center gap-2">
+            <i data-lucide="inbox" class="w-5 h-5 text-amber-700"></i>
+            <h2 class="text-lg font-semibold">Received Orders &amp; India Post Dispatch (<span id="owner-orders-count">0</span>)</h2>
+          </div>
+          <span class="text-xs text-stone-500">Update stitching status &amp; add India Post tracking IDs</span>
+        </div>
+        <div id="owner-orders-list" class="space-y-3">
+          <!-- Rendered by JavaScript -->
+        </div>
+      </div>
+
+      <!-- Offers & Profile Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Card 1: Manage Offers & Discounts -->
+        <div class="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
+          <div class="flex items-center gap-2 mb-4">
+            <i data-lucide="tag" class="w-5 h-5 text-amber-700"></i>
+            <h2 class="text-lg font-semibold">Offers &amp; Discount Codes</h2>
+          </div>
+          <form id="add-offer-form" class="space-y-3 mb-4 pb-4 border-b border-stone-100">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <label for="offer-code" class="block text-xs font-medium text-stone-600 mb-1">Promo Code</label>
+                <input id="offer-code" type="text" placeholder="e.g. FESTIVE15" required
+                  class="w-full px-3 py-2 text-sm uppercase border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+              <div>
+                <label for="offer-type" class="block text-xs font-medium text-stone-600 mb-1">Discount Type</label>
+                <select id="offer-type"
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-600">
+                  <option value="percent">% Off</option>
+                  <option value="flat">₹ Flat Off</option>
+                </select>
+              </div>
+              <div>
+                <label for="offer-value" class="block text-xs font-medium text-stone-600 mb-1">Value</label>
+                <input id="offer-value" type="number" min="1" placeholder="15" required
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+            </div>
+            <div>
+              <label for="offer-title" class="block text-xs font-medium text-stone-600 mb-1">Offer Label</label>
+              <input id="offer-title" type="text" placeholder="e.g. Festive Season Special — 15% Off" required
+                class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+            </div>
+            <button type="submit"
+              class="w-full bg-amber-700 hover:bg-amber-800 text-white font-medium text-sm py-2 px-4 rounded-lg transition-colors">
+              Add Offer
+            </button>
+          </form>
+          <div id="owner-offers-list" class="space-y-2">
+            <!-- Rendered by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Card 2: Edit Shop Profile -->
+        <div class="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
+          <div class="flex items-center gap-2 mb-4">
+            <i data-lucide="store" class="w-5 h-5 text-amber-700"></i>
+            <h2 class="text-lg font-semibold">Edit Shop Profile</h2>
+          </div>
+          <form id="profile-form" class="space-y-3.5">
+            <div>
+              <label for="input-shop-name" class="block text-xs font-medium text-stone-600 mb-1">Shop Name</label>
+              <input id="input-shop-name" type="text" required
+                class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+            </div>
+            <div>
+              <label for="input-shop-tagline" class="block text-xs font-medium text-stone-600 mb-1">Tagline</label>
+              <input id="input-shop-tagline" type="text" required
+                class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="input-shop-phone" class="block text-xs font-medium text-stone-600 mb-1">Phone / WhatsApp</label>
+                <input id="input-shop-phone" type="text" required
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+              <div>
+                <label for="input-shop-hours" class="block text-xs font-medium text-stone-600 mb-1">Working Hours</label>
+                <input id="input-shop-hours" type="text" required
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+            </div>
+            <div>
+              <label for="input-shop-address" class="block text-xs font-medium text-stone-600 mb-1">Shop Address</label>
+              <input id="input-shop-address" type="text" required
+                class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+            </div>
+            <button type="submit"
+              class="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium text-sm py-2.5 px-4 rounded-lg transition-colors">
+              Save Profile Changes
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Add New Clothes & Manage Catalog -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
+          <div class="flex items-center gap-2 mb-4">
+            <i data-lucide="plus-circle" class="w-5 h-5 text-amber-700"></i>
+            <h2 class="text-lg font-semibold">Add New Clothes / Service</h2>
+          </div>
+          <form id="add-item-form" class="space-y-3.5">
+            <div>
+              <label for="item-name" class="block text-xs font-medium text-stone-600 mb-1">Item Name</label>
+              <input id="item-name" type="text" placeholder="e.g. Custom Linen Shirt" required
+                class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label for="item-category" class="block text-xs font-medium text-stone-600 mb-1">Category</label>
+                <select id="item-category"
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-600">
+                  <option value="Shirts">Shirts</option>
+                  <option value="Kurtas">Kurtas</option>
+                  <option value="Suits">Suits</option>
+                  <option value="Trousers">Trousers</option>
+                  <option value="Alterations">Alterations</option>
+                </select>
+              </div>
+              <div>
+                <label for="item-price" class="block text-xs font-medium text-stone-600 mb-1">Price (₹)</label>
+                <input id="item-price" type="number" min="1" placeholder="850" required
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+              <div>
+                <label for="item-turnaround" class="block text-xs font-medium text-stone-600 mb-1">Stitching Time</label>
+                <input id="item-turnaround" type="text" placeholder="3–5 days" required
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+            </div>
+            <div>
+              <label for="item-description" class="block text-xs font-medium text-stone-600 mb-1">Description</label>
+              <textarea id="item-description" rows="2" placeholder="Fabric options, fit style, or measurement notes..." required
+                class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600"></textarea>
+            </div>
+            <button type="submit"
+              class="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium text-sm py-2.5 px-4 rounded-lg transition-colors">
+              Add to Shop Catalog
+            </button>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="shirt" class="w-5 h-5 text-amber-700"></i>
+              <h2 class="text-lg font-semibold">Manage Catalog (<span id="owner-item-count">0</span>)</h2>
+            </div>
+            <button id="reset-demo-btn" type="button"
+              class="text-xs font-medium text-stone-500 hover:text-stone-800 underline">
+              Reset to Default Data
+            </button>
+          </div>
+          <div id="owner-catalog-list" class="divide-y divide-stone-100 max-h-80 overflow-y-auto pr-1">
+            <!-- Rendered by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer with Discreet Owner Sign In -->
+  <footer class="border-t border-stone-200 bg-white mt-10">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
+      <span>&copy; 2026 SVR Men's Wear &mdash; Guntakal, Andhra Pradesh</span>
+      <button id="open-owner-login-btn" type="button"
+        class="text-stone-400 hover:text-stone-700 flex items-center gap-1 transition-colors">
+        <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+        <span id="footer-owner-btn-label">Owner Sign In</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Owner Login / Setup Modal -->
+  <div id="owner-login-modal" class="fixed inset-0 z-40 hidden bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full shadow-xl border border-stone-200 overflow-hidden">
+      <div class="border-b border-stone-200 px-5 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="lock" class="w-5 h-5 text-amber-700"></i>
+          <h2 id="owner-modal-title" class="text-base font-bold">Owner Sign In</h2>
+        </div>
+        <button id="close-owner-login-btn" type="button" class="p-1.5 rounded-lg text-stone-500 hover:bg-stone-100" aria-label="Close sign in">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="owner-login-form" class="p-5 space-y-3.5">
+        <p id="owner-modal-subtitle" class="text-xs text-stone-600">
+          Sign in with your personal email and app password to manage SVR Men's Wear.
+        </p>
+        <div>
+          <label for="owner-auth-email" class="block text-xs font-medium text-stone-600 mb-1">Personal Email Address</label>
+          <input id="owner-auth-email" type="email" placeholder="you@gmail.com" required
+            class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+        </div>
+        <div>
+          <label for="owner-auth-password" class="block text-xs font-medium text-stone-600 mb-1">App Password</label>
+          <input id="owner-auth-password" type="password" minlength="6" placeholder="Minimum 6 characters" required
+            class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+        </div>
+        <p id="owner-auth-error" class="hidden text-xs text-rose-600 font-medium"></p>
+        <button id="owner-auth-submit" type="submit"
+          class="w-full bg-amber-700 hover:bg-amber-800 text-white font-semibold text-sm py-2.5 px-4 rounded-lg transition-colors">
+          Sign In
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Cart & Checkout Modal -->
+  <div id="cart-modal" class="fixed inset-0 z-40 hidden bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl border border-stone-200">
+      <div class="sticky top-0 bg-white border-b border-stone-200 px-5 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="shopping-bag" class="w-5 h-5 text-amber-700"></i>
+          <h2 class="text-base font-bold">Your Tailoring Order</h2>
+        </div>
+        <button id="close-cart-btn" type="button" class="p-1.5 rounded-lg text-stone-500 hover:bg-stone-100" aria-label="Close cart">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-5">
+        <div id="cart-items-list" class="divide-y divide-stone-100">
+          <!-- Rendered by JavaScript -->
+        </div>
+
+        <div id="cart-checkout-section" class="hidden space-y-4">
+          <!-- Delivery Method (India Post) -->
+          <div class="bg-stone-50 rounded-xl p-3 border border-stone-200 space-y-2">
+            <label for="delivery-method" class="block text-xs font-semibold text-stone-700">Delivery Method</label>
+            <select id="delivery-method"
+              class="w-full px-3 py-2 text-sm bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600">
+              <option value="speed_post" data-fee="100">India Post — Speed Post (₹100, 2–4 days)</option>
+              <option value="registered_parcel" data-fee="60">India Post — Registered Parcel (₹60, 4–7 days)</option>
+              <option value="pickup" data-fee="0">Shop Pickup — Guntakal (Free)</option>
+            </select>
+          </div>
+
+          <!-- Promo Code -->
+          <div class="bg-stone-50 rounded-xl p-3 border border-stone-200 space-y-2">
+            <label for="checkout-promo" class="block text-xs font-medium text-stone-600">Have an Offer Code?</label>
+            <div class="flex gap-2">
+              <input id="checkout-promo" type="text" placeholder="Enter code (e.g. SVR10)"
+                class="flex-1 px-3 py-1.5 text-sm uppercase bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              <button id="apply-promo-btn" type="button"
+                class="px-3.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-stone-800 text-white rounded-lg">
+                Apply
+              </button>
+            </div>
+            <p id="promo-feedback" class="text-xs hidden"></p>
+          </div>
+
+          <!-- Totals -->
+          <div class="space-y-1.5 text-sm border-t border-stone-200 pt-3">
+            <div class="flex justify-between text-stone-600">
+              <span>Subtotal</span>
+              <span id="cart-subtotal">₹0</span>
+            </div>
+            <div id="cart-discount-row" class="hidden flex justify-between text-emerald-700 font-medium">
+              <span>Discount (<span id="cart-discount-code"></span>)</span>
+              <span id="cart-discount-amount">-₹0</span>
+            </div>
+            <div class="flex justify-between text-stone-600">
+              <span>Delivery Fee</span>
+              <span id="cart-delivery-fee">₹100</span>
+            </div>
+            <div class="flex justify-between text-base font-bold text-stone-900 pt-1">
+              <span>Total</span>
+              <span id="cart-total">₹0</span>
+            </div>
+          </div>
+
+          <!-- Customer Details Form -->
+          <form id="checkout-form" class="space-y-3 border-t border-stone-200 pt-4">
+            <h3 class="text-sm font-semibold text-stone-800">Customer &amp; Delivery Details</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="cust-name" class="block text-xs font-medium text-stone-600 mb-1">Full Name</label>
+                <input id="cust-name" type="text" placeholder="Ravi Kumar" required
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+              <div>
+                <label for="cust-phone" class="block text-xs font-medium text-stone-600 mb-1">Phone / WhatsApp</label>
+                <input id="cust-phone" type="tel" placeholder="9398791839" required
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="sm:col-span-2">
+                <label for="cust-address" class="block text-xs font-medium text-stone-600 mb-1">Delivery Address</label>
+                <input id="cust-address" type="text" placeholder="House No, Street, Town/City" required
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+              <div>
+                <label for="cust-pincode" class="block text-xs font-medium text-stone-600 mb-1">PIN Code</label>
+                <input id="cust-pincode" type="text" pattern="[0-9]{6}" maxlength="6" placeholder="515801" required
+                  class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+            </div>
+            <div>
+              <label for="cust-measurements" class="block text-xs font-medium text-stone-600 mb-1">Measurements / Fit Notes (Optional)</label>
+              <textarea id="cust-measurements" rows="2" placeholder="e.g. Chest 40, Waist 34, Slim fit, or 'Call for measurements'"
+                class="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600"></textarea>
+            </div>
+            <button type="submit"
+              class="w-full bg-amber-700 hover:bg-amber-800 text-white font-semibold text-sm py-2.5 px-4 rounded-lg transition-colors">
+              Place Tailoring Order
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Track Order Modal -->
+  <div id="track-modal" class="fixed inset-0 z-40 hidden bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-xl border border-stone-200 overflow-hidden">
+      <div class="border-b border-stone-200 px-5 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="package-search" class="w-5 h-5 text-amber-700"></i>
+          <h2 class="text-base font-bold">Track Your Order &amp; India Post</h2>
+        </div>
+        <button id="close-track-btn" type="button" class="p-1.5 rounded-lg text-stone-500 hover:bg-stone-100" aria-label="Close tracking">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-4">
+        <form id="track-search-form" class="flex gap-2">
+          <input id="track-query" type="text" placeholder="Enter Order ID (e.g. SVR-1001) or Phone" required
+            class="flex-1 px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600" />
+          <button type="submit"
+            class="px-4 py-2 text-xs font-semibold bg-amber-700 hover:bg-amber-800 text-white rounded-lg">
+            Find
+          </button>
+        </form>
+        <div id="track-results" class="space-y-3 text-sm text-stone-600">
+          <p class="text-xs text-stone-500">Enter your Order ID or phone number to check stitching progress and India Post tracking details.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden bg-stone-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2">
+    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toast-msg">Saved!</span>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'svr_mens_wear_v5';
+
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyDgLtEo1lm0V7KnZYNB8RN87b2G403nNa0",
+      authDomain: "svr-men-s-wear.firebaseapp.com",
+      projectId: "svr-men-s-wear",
+      storageBucket: "svr-men-s-wear.firebasestorage.app",
+      messagingSenderId: "450353086870",
+      appId: "1:450353086870:web:5713b151310efbaf7e9db7"
+    };
+
+    const DELIVERY_OPTIONS = {
+      speed_post: { label: 'India Post — Speed Post', fee: 100 },
+      registered_parcel: { label: 'India Post — Registered Parcel', fee: 60 },
+      pickup: { label: 'Shop Pickup — Guntakal', fee: 0 }
+    };
+
+    const DEFAULT_DATA = {
+      ownerEmail: '',
+      ownerAuth: null,
+      profile: {
+        name: "SVR Men's Wear",
+        tagline: "Custom Men's Tailoring & Bespoke Fit",
+        phone: '+91 9398791839 / 9949129446',
+        address: 'Guntakal, Ananthapur District, Andhra Pradesh',
+        hours: 'Mon–Sat, 10 AM – 8 PM'
+      },
+      catalog: [
+        {
+          id: 'item-1',
+          name: 'Custom Formal Shirt',
+          category: 'Shirts',
+          price: 650,
+          turnaround: '3–4 days',
+          description: 'Tailored to your exact collar, chest, and sleeve measurements with choice of collar style.'
+        },
+        {
+          id: 'item-2',
+          name: 'Classic Cotton Kurta',
+          category: 'Kurtas',
+          price: 850,
+          turnaround: '4–5 days',
+          description: 'Breathable festive or everyday men’s kurta with custom placket and pocket finishing.'
+        },
+        {
+          id: 'item-3',
+          name: '2-Piece Bespoke Suit',
+          category: 'Suits',
+          price: 4500,
+          turnaround: '7–10 days',
+          description: 'Custom-stitched blazer and matching trousers with full canvas lining and sharp lapel finish.'
+        },
+        {
+          id: 'item-4',
+          name: 'Tailored Formal Trousers',
+          category: 'Trousers',
+          price: 750,
+          turnaround: '3–4 days',
+          description: 'Slim or classic-fit men’s trousers stitched to your waist, hip, and inseam measurements.'
+        },
+        {
+          id: 'item-5',
+          name: 'Trouser Hemming & Waist Fit',
+          category: 'Alterations',
+          price: 200,
+          turnaround: '1–2 days',
+          description: 'Quick length adjustment or waist resizing for trousers, jeans, and formal pants.'
+        }
+      ],
+      offers: [
+        {
+          id: 'offer-1',
+          code: 'SVR10',
+          type: 'percent',
+          value: 10,
+          title: 'Welcome Offer — 10% Off First Stitching Order',
+          active: true
+        }
+      ],
+      orders: []
+    };
+
+    let state = loadState();
+    let isOwnerLoggedIn = false;
+    let currentOwnerEmail = '';
+    let cloudConnected = false;
+    let db = null;
+    let auth = null;
+    let cart = [];
+    let appliedOffer = null;
+    let selectedDelivery = 'speed_post';
+    let activeTab = 'shop';
+    let selectedCategory = 'All';
+    let searchQuery = '';
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.profile && Array.isArray(parsed.catalog)) {
+            if (!Array.isArray(parsed.offers)) parsed.offers = [];
+            if (!Array.isArray(parsed.orders)) parsed.orders = [];
+            return parsed;
+          }
+        }
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(DEFAULT_DATA));
+    }
+
+    function saveLocalState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    async function saveShopConfigToCloud() {
+      saveLocalState();
+      if (!db || !cloudConnected) return;
+      try {
+        await db.collection('store').doc('config').set({
+          profile: state.profile,
+          catalog: state.catalog,
+          offers: state.offers,
+          ownerEmail: state.ownerEmail || ''
+        }, { merge: true });
+      } catch (e) {}
+    }
+
+    async function saveOrderToCloud(order) {
+      saveLocalState();
+      if (!db || !cloudConnected) return;
+      try {
+        await db.collection('orders').doc(order.id).set(order, { merge: true });
+      } catch (e) {}
+    }
+
+    function updateCloudPill() {
+      const pill = document.getElementById('cloud-sync-pill');
+      if (!pill) return;
+      if (cloudConnected) {
+        pill.textContent = 'Firebase Cloud Synced';
+        pill.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
+      } else {
+        pill.textContent = 'Local Mode (Enable Firestore)';
+        pill.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-stone-200 text-stone-700';
+      }
+    }
+
+    function initFirebase() {
+      try {
+        if (!window.firebase) return;
+        if (!firebase.apps.length) {
+          firebase.initializeApp(FIREBASE_CONFIG);
+        }
+        db = firebase.firestore();
+        auth = firebase.auth();
+
+        db.collection('store').doc('config').onSnapshot((doc) => {
+          cloudConnected = true;
+          updateCloudPill();
+          if (doc.exists) {
+            const d = doc.data();
+            if (d.profile) state.profile = d.profile;
+            if (Array.isArray(d.catalog)) state.catalog = d.catalog;
+            if (Array.isArray(d.offers)) state.offers = d.offers;
+            if (d.ownerEmail) state.ownerEmail = d.ownerEmail;
+            saveLocalState();
+            renderProfile();
+            renderOffersStrip();
+            renderCatalog();
+            renderOwnerOffers();
+            renderOwnerList();
+          } else {
+            saveShopConfigToCloud();
+          }
+        }, () => {
+          cloudConnected = false;
+          updateCloudPill();
+        });
+
+        db.collection('orders').onSnapshot((snap) => {
+          cloudConnected = true;
+          updateCloudPill();
+          const cloudOrders = [];
+          snap.forEach((doc) => cloudOrders.push(doc.data()));
+          cloudOrders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+          state.orders = cloudOrders;
+          saveLocalState();
+          renderOwnerOrders();
+        }, () => {
+          cloudConnected = false;
+          updateCloudPill();
+        });
+
+        auth.onAuthStateChanged((user) => {
+          if (user && user.email) {
+            if (!state.ownerEmail || user.email.toLowerCase() === state.ownerEmail.toLowerCase()) {
+              isOwnerLoggedIn = true;
+              currentOwnerEmail = user.email;
+              renderOwnerVisibility();
+            }
+          }
+        });
+      } catch (e) {
+        cloudConnected = false;
+        updateCloudPill();
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      toastMsg.textContent = msg;
+      toast.classList.remove('hidden');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 2800);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderOwnerVisibility() {
+      const ownerNav = document.getElementById('owner-nav');
+      const footerBtnLabel = document.getElementById('footer-owner-btn-label');
+      const signedInEmail = document.getElementById('signed-in-owner-email');
+
+      if (isOwnerLoggedIn && currentOwnerEmail) {
+        ownerNav.classList.remove('hidden');
+        footerBtnLabel.textContent = 'Owner Panel';
+        signedInEmail.textContent = currentOwnerEmail;
+      } else {
+        ownerNav.classList.add('hidden');
+        footerBtnLabel.textContent = 'Owner Sign In';
+        if (activeTab === 'owner') {
+          switchTab('shop');
+        }
+      }
+      updateCloudPill();
+    }
+
+    function renderProfile() {
+      const p = state.profile;
+      document.getElementById('header-shop-name').textContent = p.name;
+      document.getElementById('header-shop-tagline').textContent = p.tagline;
+      document.getElementById('banner-shop-name').textContent = p.name;
+      document.getElementById('banner-shop-tagline').textContent = p.tagline;
+      document.getElementById('banner-phone').textContent = p.phone;
+      document.getElementById('banner-address').textContent = p.address;
+      document.getElementById('banner-hours').textContent = p.hours;
+
+      document.getElementById('input-shop-name').value = p.name;
+      document.getElementById('input-shop-tagline').value = p.tagline;
+      document.getElementById('input-shop-phone').value = p.phone;
+      document.getElementById('input-shop-address').value = p.address;
+      document.getElementById('input-shop-hours').value = p.hours;
+    }
+
+    function renderOffersStrip() {
+      const strip = document.getElementById('shop-offers-strip');
+      const activeOffer = state.offers.find((o) => o.active);
+      if (!activeOffer) {
+        strip.classList.add('hidden');
+        return;
+      }
+      strip.classList.remove('hidden');
+      const discLabel = activeOffer.type === 'percent' ? `${activeOffer.value}% OFF` : `₹${activeOffer.value} OFF`;
+      document.getElementById('shop-offer-text').textContent = `${activeOffer.title} — Use code ${activeOffer.code} (${discLabel})`;
+      document.getElementById('copy-offer-btn').dataset.code = activeOffer.code;
+    }
+
+    function renderCatalog() {
+      const grid = document.getElementById('catalog-grid');
+      const q = searchQuery.trim().toLowerCase();
+
+      const filtered = state.catalog.filter((item) => {
+        const matchCat = selectedCategory === 'All' || item.category === selectedCategory;
+        const matchSearch = !q ||
+          item.name.toLowerCase().includes(q) ||
+          item.description.toLowerCase().includes(q) ||
+          item.category.toLowerCase().includes(q);
+        return matchCat && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-white border border-stone-200 rounded-2xl p-8 text-center text-stone-500">
+            <p class="text-sm font-medium">No clothes match your filter right now.</p>
+            <p class="text-xs mt-1">Try another category or search term.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const badgeColors = {
+        Shirts: 'bg-sky-50 text-sky-700 border-sky-200',
+        Kurtas: 'bg-amber-50 text-amber-800 border-amber-200',
+        Suits: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        Trousers: 'bg-stone-100 text-stone-700 border-stone-300',
+        Alterations: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      };
+
+      grid.innerHTML = filtered.map((item) => {
+        const badge = badgeColors[item.category] || 'bg-stone-100 text-stone-700 border-stone-200';
+        return `
+          <article class="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm flex flex-col justify-between hover:border-amber-300 transition-colors">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full border ${badge}">
+                  ${escapeHtml(item.category)}
+                </span>
+                <span class="text-xs text-stone-500 flex items-center gap-1">
+                  <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                  ${escapeHtml(item.turnaround)}
+                </span>
+              </div>
+              <h3 class="text-base font-semibold text-stone-900">${escapeHtml(item.name)}</h3>
+              <p class="text-sm text-stone-600 mt-1.5 leading-relaxed">${escapeHtml(item.description)}</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between gap-2">
+              <span class="text-lg font-bold text-amber-800">₹${Number(item.price).toLocaleString('en-IN')}</span>
+              <button type="button" data-add-id="${escapeHtml(item.id)}"
+                class="add-to-cart-btn px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-amber-700 text-white text-xs font-medium flex items-center gap-1.5 transition-colors">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Add to Cart</span>
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function getCartTotals() {
+      const subtotal = cart.reduce((sum, c) => sum + c.price * c.qty, 0);
+      let discount = 0;
+      if (appliedOffer && subtotal > 0) {
+        if (appliedOffer.type === 'percent') {
+          discount = Math.round((subtotal * appliedOffer.value) / 100);
+        } else {
+          discount = Math.min(subtotal, appliedOffer.value);
+        }
+      }
+      const deliveryObj = DELIVERY_OPTIONS[selectedDelivery] || DELIVERY_OPTIONS.speed_post;
+      const deliveryFee = subtotal > 0 ? deliveryObj.fee : 0;
+      return { subtotal, discount, deliveryFee, total: Math.max(0, subtotal - discount + deliveryFee) };
+    }
+
+    function renderCart() {
+      const totalQty = cart.reduce((sum, c) => sum + c.qty, 0);
+      document.getElementById('cart-count-badge').textContent = totalQty;
+
+      const list = document.getElementById('cart-items-list');
+      const checkoutSection = document.getElementById('cart-checkout-section');
+
+      if (cart.length === 0) {
+        list.innerHTML = `
+          <div class="py-8 text-center text-stone-500">
+            <p class="text-sm font-medium">Your cart is empty.</p>
+            <p class="text-xs mt-1">Add clothes from the Customer Shop to place a tailoring order.</p>
+          </div>
+        `;
+        checkoutSection.classList.add('hidden');
+        return;
+      }
+
+      checkoutSection.classList.remove('hidden');
+      list.innerHTML = cart.map((c) => `
+        <div class="py-3 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-stone-900 truncate">${escapeHtml(c.name)}</p>
+            <p class="text-xs text-stone-500">₹${Number(c.price).toLocaleString('en-IN')} each</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" data-qty-id="${escapeHtml(c.itemId)}" data-delta="-1"
+              class="cart-qty-btn w-7 h-7 rounded-md border border-stone-200 text-stone-700 hover:bg-stone-100 font-bold text-sm">-</button>
+            <span class="text-sm font-semibold w-5 text-center">${c.qty}</span>
+            <button type="button" data-qty-id="${escapeHtml(c.itemId)}" data-delta="1"
+              class="cart-qty-btn w-7 h-7 rounded-md border border-stone-200 text-stone-700 hover:bg-stone-100 font-bold text-sm">+</button>
+          </div>
+        </div>
+      `).join('');
+
+      const { subtotal, discount, deliveryFee, total } = getCartTotals();
+      document.getElementById('cart-subtotal').textContent = '₹' + subtotal.toLocaleString('en-IN');
+      document.getElementById('cart-delivery-fee').textContent = deliveryFee === 0 ? 'Free' : '₹' + deliveryFee.toLocaleString('en-IN');
+      document.getElementById('cart-total').textContent = '₹' + total.toLocaleString('en-IN');
+
+      const discRow = document.getElementById('cart-discount-row');
+      if (discount > 0 && appliedOffer) {
+        discRow.classList.remove('hidden');
+        document.getElementById('cart-discount-code').textContent = appliedOffer.code;
+        document.getElementById('cart-discount-amount').textContent = '-₹' + discount.toLocaleString('en-IN');
+      } else {
+        discRow.classList.add('hidden');
+      }
+    }
+
+    function renderOwnerOrders() {
+      const list = document.getElementById('owner-orders-list');
+      document.getElementById('owner-orders-count').textContent = state.orders.length;
+
+      const badge = document.getElementById('owner-orders-badge');
+      const newCount = state.orders.filter((o) => o.status === 'New').length;
+      if (newCount > 0) {
+        badge.textContent = newCount;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      if (state.orders.length === 0) {
+        list.innerHTML = `
+          <div class="bg-stone-50 rounded-xl p-6 text-center text-stone-500 border border-dashed border-stone-200">
+            <p class="text-sm font-medium">No customer orders yet.</p>
+            <p class="text-xs mt-1">Orders placed by customers will appear here for stitching and India Post dispatch.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const statuses = [
+        'New',
+        'Measuring / Cutting',
+        'Stitching',
+        'Ready for Dispatch',
+        'Dispatched via India Post',
+        'Delivered'
+      ];
+
+      list.innerHTML = state.orders.map((order) => {
+        const itemsSummary = order.items.map((i) => `${escapeHtml(i.name)} ×${i.qty}`).join(', ');
+        const deliveryLabel = order.deliveryLabel || 'India Post — Speed Post';
+        const trackingVal = order.indiaPostTracking || '';
+        return `
+          <div class="border border-stone-200 rounded-xl p-4 bg-stone-50/50 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900">${escapeHtml(order.id)}</span>
+                <span class="text-sm font-semibold text-stone-900">${escapeHtml(order.customerName)}</span>
+                <span class="text-xs text-stone-500">(${escapeHtml(order.phone)})</span>
+              </div>
+              <select data-order-id="${escapeHtml(order.id)}"
+                class="order-status-select text-xs font-medium px-2.5 py-1.5 rounded-lg border border-stone-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-600">
+                ${statuses.map((s) => `<option value="${s}" ${order.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+            </div>
+            <p class="text-xs text-stone-700"><span class="font-medium">Items:</span> ${itemsSummary}</p>
+            <p class="text-xs text-stone-600"><span class="font-medium">Address:</span> ${escapeHtml(order.address)} — PIN ${escapeHtml(order.pincode)} <span class="text-stone-400">(${escapeHtml(deliveryLabel)})</span></p>
+            ${order.measurements ? `<p class="text-xs text-stone-600"><span class="font-medium">Measurements/Notes:</span> ${escapeHtml(order.measurements)}</p>` : ''}
+
+            <div class="bg-white border border-stone-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2">
+              <div class="flex-1">
+                <label class="block text-[11px] font-semibold text-stone-600 mb-1">India Post Consignment / Tracking Number</label>
+                <input type="text" value="${escapeHtml(trackingVal)}" placeholder="e.g. EG123456789IN"
+                  data-tracking-input="${escapeHtml(order.id)}"
+                  class="w-full px-2.5 py-1.5 text-xs uppercase border border-stone-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-600" />
+              </div>
+              <div class="flex items-center gap-2 sm:self-end">
+                <button type="button" data-dispatch-id="${escapeHtml(order.id)}"
+                  class="dispatch-btn px-3 py-1.5 rounded-md bg-amber-700 hover:bg-amber-800 text-white text-xs font-medium">
+                  Save &amp; Dispatch
+                </button>
+                <a href="https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx" target="_blank" rel="noopener noreferrer"
+                  class="px-2.5 py-1.5 rounded-md border border-stone-200 hover:bg-stone-100 text-stone-700 text-xs font-medium">
+                  India Post
+                </a>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-200 text-xs">
+              <span class="text-stone-500">Placed: ${escapeHtml(order.createdAt)}</span>
+              <span class="font-bold text-sm text-amber-800">Total: ₹${Number(order.total).toLocaleString('en-IN')}${order.promoCode ? ` (${escapeHtml(order.promoCode)} applied)` : ''}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderOwnerOffers() {
+      const list = document.getElementById('owner-offers-list');
+      if (state.offers.length === 0) {
+        list.innerHTML = '<p class="text-xs text-stone-500 text-center py-2">No offers created yet.</p>';
+        return;
+      }
+
+      list.innerHTML = state.offers.map((offer) => {
+        const valText = offer.type === 'percent' ? `${offer.value}% off` : `₹${offer.value} off`;
+        return `
+          <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-stone-200 bg-stone-50">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900">${escapeHtml(offer.code)}</span>
+                <span class="text-xs font-medium text-stone-700">${valText}</span>
+              </div>
+              <p class="text-xs text-stone-500 truncate mt-0.5">${escapeHtml(offer.title)}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button type="button" data-toggle-offer="${escapeHtml(offer.id)}"
+                class="toggle-offer-btn text-xs px-2.5 py-1 rounded-md font-medium ${offer.active ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-600'}">
+                ${offer.active ? 'Active' : 'Paused'}
+              </button>
+              <button type="button" data-delete-offer="${escapeHtml(offer.id)}"
+                class="delete-offer-btn text-xs text-rose-600 hover:text-rose-800 px-1.5 py-1">
+                Remove
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderOwnerList() {
+      const list = document.getElementById('owner-catalog-list');
+      document.getElementById('owner-item-count').textContent = state.catalog.length;
+
+      if (state.catalog.length === 0) {
+        list.innerHTML = '<p class="text-sm text-stone-500 py-4 text-center">No items in your catalog yet. Add one above!</p>';
+        return;
+      }
+
+      list.innerHTML = state.catalog.map((item) => `
+        <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-medium text-sm text-stone-900">${escapeHtml(item.name)}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">${escapeHtml(item.category)}</span>
+              <span class="text-xs font-semibold text-amber-800">₹${Number(item.price).toLocaleString('en-IN')}</span>
+            </div>
+            <p class="text-xs text-stone-500 truncate mt-0.5">${escapeHtml(item.description)}</p>
+          </div>
+          <button type="button" data-delete-id="${escapeHtml(item.id)}"
+            class="delete-item-btn self-start sm:self-center text-xs font-medium text-rose-600 hover:text-rose-800 px-2.5 py-1 rounded-md hover:bg-rose-50 transition-colors shrink-0">
+            Remove
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function switchTab(tab) {
+      if (tab === 'owner' && !isOwnerLoggedIn) return;
+      activeTab = tab;
+      const shopView = document.getElementById('view-shop');
+      const ownerView = document.getElementById('view-owner');
+      const btnShop = document.getElementById('tab-shop');
+      const btnOwner = document.getElementById('tab-owner');
+
+      if (tab === 'shop') {
+        shopView.classList.remove('hidden');
+        ownerView.classList.add('hidden');
+        btnShop.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 bg-white text-stone-900 shadow-sm';
+        btnOwner.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 text-stone-600 hover:text-stone-900';
+      } else {
+        shopView.classList.add('hidden');
+        ownerView.classList.remove('hidden');
+        btnOwner.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 bg-white text-stone-900 shadow-sm';
+        btnShop.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 text-stone-600 hover:text-stone-900';
+      }
+    }
+
+    function openOwnerLoginModal() {
+      if (isOwnerLoggedIn) {
+        switchTab('owner');
+        return;
+      }
+      const modal = document.getElementById('owner-login-modal');
+      const title = document.getElementById('owner-modal-title');
+      const subtitle = document.getElementById('owner-modal-subtitle');
+      const submitBtn = document.getElementById('owner-auth-submit');
+      const errEl = document.getElementById('owner-auth-error');
+
+      errEl.classList.add('hidden');
+      document.getElementById('owner-login-form').reset();
+
+      const hasOwner = Boolean(state.ownerEmail || state.ownerAuth);
+      if (!hasOwner) {
+        title.textContent = 'Set Up Owner Account';
+        subtitle.textContent = "Enter your personal email address and create a password (6+ characters). Only you will see the Owner Panel.";
+        submitBtn.textContent = 'Save & Open Owner Panel';
+      } else {
+        title.textContent = 'Owner Sign In';
+        subtitle.textContent = "Sign in with your personal email and app password to open the Owner Panel.";
+        submitBtn.textContent = 'Sign In';
+      }
+
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Event Listeners
+    document.getElementById('tab-shop').addEventListener('click', () => switchTab('shop'));
+    document.getElementById('tab-owner').addEventListener('click', () => switchTab('owner'));
+
+    document.getElementById('open-owner-login-btn').addEventListener('click', openOwnerLoginModal);
+    document.getElementById('close-owner-login-btn').addEventListener('click', () => {
+      document.getElementById('owner-login-modal').classList.add('hidden');
+    });
+
+    document.getElementById('owner-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('owner-auth-email').value.trim().toLowerCase();
+      const password = document.getElementById('owner-auth-password').value;
+      const errEl = document.getElementById('owner-auth-error');
+      errEl.classList.add('hidden');
+
+      const hasOwner = Boolean(state.ownerEmail || state.ownerAuth);
+
+      // Try Firebase Auth first if available
+      if (auth) {
+        try {
+          if (!hasOwner) {
+            await auth.createUserWithEmailAndPassword(email, password);
+            state.ownerEmail = email;
+            state.ownerAuth = { email, password };
+            await saveShopConfigToCloud();
+          } else {
+            if (state.ownerEmail && email !== state.ownerEmail.toLowerCase()) {
+              throw new Error('This email is not registered as the shop owner.');
+            }
+            await auth.signInWithEmailAndPassword(email, password);
+          }
+          isOwnerLoggedIn = true;
+          currentOwnerEmail = email;
+          document.getElementById('owner-login-modal').classList.add('hidden');
+          renderOwnerVisibility();
+          switchTab('owner');
+          showToast('Signed in as Owner (' + email + ')');
+          return;
+        } catch (fbErr) {
+          // If Firebase Auth is not enabled yet in Console, fall back to local check below
+          if (fbErr && fbErr.code && fbErr.code !== 'auth/operation-not-allowed' && fbErr.code !== 'auth/configuration-not-found') {
+            errEl.textContent = fbErr.message || 'Sign in failed. Please check email and password.';
+            errEl.classList.remove('hidden');
+            return;
+          }
+        }
+      }
+
+      // Local fallback
+      if (!state.ownerAuth) {
+        state.ownerEmail = email;
+        state.ownerAuth = { email, password };
+        saveLocalState();
+        isOwnerLoggedIn = true;
+        currentOwnerEmail = email;
+        document.getElementById('owner-login-modal').classList.add('hidden');
+        renderOwnerVisibility();
+        switchTab('owner');
+        showToast('Owner account created! Signed in as ' + email);
+        return;
+      }
+
+      if (email === state.ownerAuth.email.toLowerCase() && password === state.ownerAuth.password) {
+        isOwnerLoggedIn = true;
+        currentOwnerEmail = email;
+        document.getElementById('owner-login-modal').classList.add('hidden');
+        renderOwnerVisibility();
+        switchTab('owner');
+        showToast('Welcome back, Owner!');
+      } else {
+        errEl.textContent = 'Incorrect email or password. Please try again.';
+        errEl.classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('owner-signout-btn').addEventListener('click', async () => {
+      if (auth) {
+        try { await auth.signOut(); } catch (e) {}
+      }
+      isOwnerLoggedIn = false;
+      currentOwnerEmail = '';
+      renderOwnerVisibility();
+      switchTab('shop');
+      showToast('Signed out. Owner Panel is now hidden.');
+    });
+
+    document.getElementById('open-cart-btn').addEventListener('click', () => {
+      document.getElementById('cart-modal').classList.remove('hidden');
+      renderCart();
+      if (window.lucide) lucide.createIcons();
+    });
+
+    document.getElementById('close-cart-btn').addEventListener('click', () => {
+      document.getElementById('cart-modal').classList.add('hidden');
+    });
+
+    document.getElementById('open-track-btn').addEventListener('click', () => {
+      document.getElementById('track-modal').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    });
+
+    document.getElementById('close-track-btn').addEventListener('click', () => {
+      document.getElementById('track-modal').classList.add('hidden');
+    });
+
+    document.getElementById('delivery-method').addEventListener('change', (e) => {
+      selectedDelivery = e.target.value;
+      renderCart();
+    });
+
+    document.getElementById('copy-offer-btn').addEventListener('click', (e) => {
+      const code = e.currentTarget.dataset.code || '';
+      if (!code) return;
+      try {
+        navigator.clipboard.writeText(code);
+      } catch (err) {
+        const tmp = document.createElement('input');
+        tmp.value = code;
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand('copy');
+        document.body.removeChild(tmp);
+      }
+      document.getElementById('checkout-promo').value = code;
+      showToast('Copied code ' + code + '!');
+    });
+
+    document.getElementById('category-filters').addEventListener('click', (e) => {
+      const btn = e.target.closest('.cat-btn');
+      if (!btn) return;
+      selectedCategory = btn.dataset.category;
+      document.querySelectorAll('.cat-btn').forEach((b) => {
+        if (b.dataset.category === selectedCategory) {
+          b.className = 'cat-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-amber-700 text-white';
+        } else {
+          b.className = 'cat-btn px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-white text-stone-700 border border-stone-200 hover:bg-stone-100';
+        }
+      });
+      renderCatalog();
+    });
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      renderCatalog();
+    });
+
+    document.getElementById('catalog-grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.add-to-cart-btn');
+      if (!btn) return;
+      const itemId = btn.dataset.addId;
+      const item = state.catalog.find((i) => i.id === itemId);
+      if (!item) return;
+
+      const existing = cart.find((c) => c.itemId === itemId);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({ itemId: item.id, name: item.name, price: Number(item.price), qty: 1 });
+      }
+      renderCart();
+      showToast('Added "' + item.name + '" to cart!');
+    });
+
+    document.getElementById('cart-items-list').addEventListener('click', (e) => {
+      const btn = e.target.closest('.cart-qty-btn');
+      if (!btn) return;
+      const id = btn.dataset.qtyId;
+      const delta = Number(btn.dataset.delta);
+      const entry = cart.find((c) => c.itemId === id);
+      if (!entry) return;
+      entry.qty += delta;
+      if (entry.qty <= 0) {
+        cart = cart.filter((c) => c.itemId !== id);
+      }
+      renderCart();
+    });
+
+    document.getElementById('apply-promo-btn').addEventListener('click', () => {
+      const code = document.getElementById('checkout-promo').value.trim().toUpperCase();
+      const feedback = document.getElementById('promo-feedback');
+      const found = state.offers.find((o) => o.active && o.code.toUpperCase() === code);
+      feedback.classList.remove('hidden');
+      if (found) {
+        appliedOffer = found;
+        feedback.className = 'text-xs text-emerald-700 font-medium';
+        feedback.textContent = 'Applied: ' + found.title;
+      } else {
+        appliedOffer = null;
+        feedback.className = 'text-xs text-rose-600 font-medium';
+        feedback.textContent = 'Invalid or paused offer code.';
+      }
+      renderCart();
+    });
+
+    document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (cart.length === 0) return;
+      const { total } = getCartTotals();
+      const deliveryObj = DELIVERY_OPTIONS[selectedDelivery] || DELIVERY_OPTIONS.speed_post;
+      const orderNum = 1001 + state.orders.length;
+      const newOrder = {
+        id: 'SVR-' + orderNum + '-' + String(Date.now()).slice(-3),
+        timestamp: Date.now(),
+        customerName: document.getElementById('cust-name').value.trim(),
+        phone: document.getElementById('cust-phone').value.trim(),
+        address: document.getElementById('cust-address').value.trim(),
+        pincode: document.getElementById('cust-pincode').value.trim(),
+        measurements: document.getElementById('cust-measurements').value.trim(),
+        deliveryMethod: selectedDelivery,
+        deliveryLabel: deliveryObj.label,
+        indiaPostTracking: '',
+        items: JSON.parse(JSON.stringify(cart)),
+        promoCode: appliedOffer ? appliedOffer.code : '',
+        total,
+        status: 'New',
+        createdAt: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+      };
+
+      state.orders.unshift(newOrder);
+      await saveOrderToCloud(newOrder);
+      cart = [];
+      appliedOffer = null;
+      e.target.reset();
+      document.getElementById('checkout-promo').value = '';
+      document.getElementById('promo-feedback').classList.add('hidden');
+      document.getElementById('cart-modal').classList.add('hidden');
+
+      renderCart();
+      renderOwnerOrders();
+      showToast('Order ' + newOrder.id + ' placed! Use Track Order anytime.');
+    });
+
+    document.getElementById('track-search-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = document.getElementById('track-query').value.trim().toLowerCase();
+      const resDiv = document.getElementById('track-results');
+      const matches = state.orders.filter((o) =>
+        o.id.toLowerCase().includes(q) || o.phone.toLowerCase().includes(q)
+      );
+
+      if (matches.length === 0) {
+        resDiv.innerHTML = '<p class="text-xs text-rose-600 font-medium">No order found for that ID or phone number.</p>';
+        return;
+      }
+
+      resDiv.innerHTML = matches.map((o) => `
+        <div class="border border-stone-200 rounded-xl p-3.5 bg-stone-50 space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900">${escapeHtml(o.id)}</span>
+            <span class="text-xs font-semibold text-emerald-700">${escapeHtml(o.status)}</span>
+          </div>
+          <p class="text-xs text-stone-700"><span class="font-medium">Delivery:</span> ${escapeHtml(o.deliveryLabel || 'India Post')}</p>
+          ${o.indiaPostTracking ? `
+            <div class="pt-1 flex items-center justify-between gap-2">
+              <span class="text-xs font-semibold text-stone-900">Tracking: ${escapeHtml(o.indiaPostTracking)}</span>
+              <a href="https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx" target="_blank" rel="noopener noreferrer"
+                class="text-xs font-semibold text-amber-700 underline">Track on India Post</a>
+            </div>
+          ` : '<p class="text-xs text-stone-500">India Post tracking number will appear once dispatched.</p>'}
+        </div>
+      `).join('');
+    });
+
+    document.getElementById('owner-orders-list').addEventListener('change', async (e) => {
+      const sel = e.target.closest('.order-status-select');
+      if (!sel) return;
+      const order = state.orders.find((o) => o.id === sel.dataset.orderId);
+      if (!order) return;
+      order.status = sel.value;
+      await saveOrderToCloud(order);
+      renderOwnerOrders();
+      showToast('Order ' + order.id + ' marked as "' + order.status + '"');
+    });
+
+    document.getElementById('owner-orders-list').addEventListener('click', async (e) => {
+      const btn = e.target.closest('.dispatch-btn');
+      if (!btn) return;
+      const orderId = btn.dataset.dispatchId;
+      const order = state.orders.find((o) => o.id === orderId);
+      const input = document.querySelector(`[data-tracking-input="${orderId}"]`);
+      if (!order || !input) return;
+
+      const code = input.value.trim().toUpperCase();
+      if (!code) {
+        showToast('Please enter an India Post tracking number first.');
+        return;
+      }
+      order.indiaPostTracking = code;
+      order.status = 'Dispatched via India Post';
+      await saveOrderToCloud(order);
+      renderOwnerOrders();
+      showToast('Saved India Post tracking ' + code + ' for ' + order.id);
+    });
+
+    document.getElementById('add-offer-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const offer = {
+        id: 'offer-' + Date.now(),
+        code: document.getElementById('offer-code').value.trim().toUpperCase(),
+        type: document.getElementById('offer-type').value,
+        value: Number(document.getElementById('offer-value').value),
+        title: document.getElementById('offer-title').value.trim(),
+        active: true
+      };
+      state.offers.unshift(offer);
+      await saveShopConfigToCloud();
+      renderOwnerOffers();
+      renderOffersStrip();
+      e.target.reset();
+      showToast('Offer "' + offer.code + '" added!');
+    });
+
+    document.getElementById('owner-offers-list').addEventListener('click', async (e) => {
+      const toggleBtn = e.target.closest('.toggle-offer-btn');
+      if (toggleBtn) {
+        const offer = state.offers.find((o) => o.id === toggleBtn.dataset.toggleOffer);
+        if (offer) {
+          offer.active = !offer.active;
+          await saveShopConfigToCloud();
+          renderOwnerOffers();
+          renderOffersStrip();
+          showToast(offer.code + (offer.active ? ' activated' : ' paused'));
+        }
+        return;
+      }
+      const delBtn = e.target.closest('.delete-offer-btn');
+      if (delBtn) {
+        const id = delBtn.dataset.deleteOffer;
+        state.offers = state.offers.filter((o) => o.id !== id);
+        await saveShopConfigToCloud();
+        renderOwnerOffers();
+        renderOffersStrip();
+        showToast('Offer removed.');
+      }
+    });
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      state.profile = {
+        name: document.getElementById('input-shop-name').value.trim(),
+        tagline: document.getElementById('input-shop-tagline').value.trim(),
+        phone: document.getElementById('input-shop-phone').value.trim(),
+        address: document.getElementById('input-shop-address').value.trim(),
+        hours: document.getElementById('input-shop-hours').value.trim()
+      };
+      await saveShopConfigToCloud();
+      renderProfile();
+      showToast('Shop profile updated!');
+    });
+
+    document.getElementById('add-item-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newItem = {
+        id: 'item-' + Date.now(),
+        name: document.getElementById('item-name').value.trim(),
+        category: document.getElementById('item-category').value,
+        price: Number(document.getElementById('item-price').value),
+        turnaround: document.getElementById('item-turnaround').value.trim(),
+        description: document.getElementById('item-description').value.trim()
+      };
+      state.catalog.unshift(newItem);
+      await saveShopConfigToCloud();
+      renderCatalog();
+      renderOwnerList();
+      e.target.reset();
+      showToast('Added "' + newItem.name + '" to catalog!');
+    });
+
+    document.getElementById('owner-catalog-list').addEventListener('click', async (e) => {
+      const btn = e.target.closest('.delete-item-btn');
+      if (!btn) return;
+      const id = btn.dataset.deleteId;
+      state.catalog = state.catalog.filter((item) => item.id !== id);
+      await saveShopConfigToCloud();
+      renderCatalog();
+      renderOwnerList();
+      showToast('Item removed from catalog.');
+    });
+
+    document.getElementById('reset-demo-btn').addEventListener('click', async () => {
+      const savedAuth = state.ownerAuth;
+      const savedEmail = state.ownerEmail;
+      state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      state.ownerAuth = savedAuth;
+      state.ownerEmail = savedEmail;
+      cart = [];
+      appliedOffer = null;
+      await saveShopConfigToCloud();
+      renderProfile();
+      renderOffersStrip();
+      renderCatalog();
+      renderCart();
+      renderOwnerOrders();
+      renderOwnerOffers();
+      renderOwnerList();
+      showToast("Reset to default SVR Men's Wear data.");
+    });
+
+    // Initial Render & Firebase Init
+    renderOwnerVisibility();
+    renderProfile();
+    renderOffersStrip();
+    renderCatalog();
+    renderCart();
+    renderOwnerOrders();
+    renderOwnerOffers();
+    renderOwnerList();
+    if (window.lucide) lucide.createIcons();
+    initFirebase();
+  </script>
+</body>
+</html>
